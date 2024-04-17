@@ -1,4 +1,3 @@
-import requests
 import base64
 import sqlite3
 import datetime
@@ -42,22 +41,41 @@ class JSONGenerator(ABC):
 
 class URLCreator(ABC):
     def __init__(self, json_generator: JSONGenerator) -> None:
+        """
+        Initialize JSON generator.
+        
+        Args:
+            json_generator (JSONGenerator): instance of the JSONGenerator class.
+        """
         self.json_generator = json_generator
 
     @abstractmethod
     def generate_URL(self) -> str:
+        """
+        Generate the URL of the web request.
+        
+        Returns:
+            str: URL of the web request.
+        """
         pass
-
-class PriceSearching(ABC):
-    @abstractmethod
-    def __init__(self) -> None:
-        self.products = {}
 
 class JumboJSONGenerator(JSONGenerator):
     def __init__(self) -> None:
         self.page = 1
 
     def _found_categories(self, categories: list):
+        """
+        Process the categories for inclusion in the JSON key.
+        
+        Args:
+            categories (list): list of categories.
+            
+        Returns:
+            tuple: tuple with three lists:
+                1. category mapping.
+                2. Categories query.
+                3. Selected facets.
+        """
         map = []
         query = []
         selected_facets = []
@@ -77,6 +95,16 @@ class JumboJSONGenerator(JSONGenerator):
         return map, query, selected_facets
     
     def generate_key(self, categories: list, page: int):
+        """
+        Generate the JSON key for the web request.
+        
+        Args:
+            categories (list): List of categories.
+            page (int): Page number.
+            
+        Returns:
+            str: base64 encoded JSON key.
+        """
         start, end = number_range(page)
         self.page = page
         map, query, selected_facets = self._found_categories(categories)
@@ -91,19 +119,42 @@ class JumboURLCreator(URLCreator):
         self.json_generator = JumboJSONGenerator()
     
     def generate_URL(self, categories: list, page: int) -> str:
+        """
+        Generate the URL of the web request.
+        
+        Args:
+            categories (list): List of categories.
+            page (int): Page number.
+            
+        Returns:
+            str: URL of the web request.
+        """
         key = self.json_generator.generate_key(categories, page)
         url= f"https://www.jumbo.com.ar/_v/segment/graphql/v1?workspace=master&maxAge=short&appsEtag=remove&domain=store&locale=es-AR&__bindingId=4780db52-b885-45f0-bbcc-8bf212bb8427&operationName=productSearchV3&variables=%7B%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%22fd92698fe375e8e4fa55d26fa62951d979b790fcf1032a6f02926081d199f550%22%2C%22sender%22%3A%22vtex.store-resources%400.x%22%2C%22provider%22%3A%22vtex.search-graphql%400.x%22%7D%2C%22variables%22%3A%22{key}%3D%22%7D"
         return url
 
-class JumboPriceSearching(PriceSearching):
+class JumboPriceSearching():
     def __init__(self) -> None:
         self.url_creator = JumboURLCreator()
         self.products = []
 
     def get_products(self):
+        """
+        Get the list of products.
+        
+        Returns:
+            list: List of products.
+        """
         return self.products
 
     async def extract_json(self, categories: list, session: aiohttp.ClientSession):
+        """
+        Extract the product data from the JSON obtained in the web request.
+        
+        Args:
+            categories (list): list of categories.
+            session (aiohttp.ClientSession): aiohttp session.
+        """
         maximum_pages = 51 # Maximum number of pages that Jumbo website accepts.
         for i in range(1, maximum_pages):
             url = self.url_creator.generate_URL(categories, i)
@@ -140,6 +191,9 @@ class SaveToCSVFromSQL(SQLite):
         super().__init__(database_path)
 
     def save(self):
+        """
+        Save table data in CSV files.
+        """
         for products in CONS_EVERYTHING:
             with self.connect_db() as conn:
                 sql_query = pd.read_sql_query(
@@ -153,7 +207,7 @@ class SaveToCSVFromSQL(SQLite):
                 df.to_csv(f"JumboBot/data/csv/{products[0].CATEGORY}.csv", index=False)
 
 class SaveToSQL(SQLite):
-    def __init__(self, price_searching: PriceSearching, database_path) -> None:
+    def __init__(self, price_searching, database_path) -> None:
         self.price_searching = price_searching
         super().__init__(database_path)
     
@@ -164,6 +218,18 @@ class SaveToSQL(SQLite):
         cursor.close()
 
     def create_rows(self, ID: int, product: str, category: str, subcategories: str, subsubcategories:str, price: int, date: datetime):
+        """
+        Create rows in the corresponding table in the SQLite database.
+        
+        Args:
+            ID (int): ID of the product.
+            product (str): Product name.
+            category (str): Product category.
+            subcategories (str): Subcategory of the product.
+            subsubcategories (str): Sub-subcategory of the product.
+            price (int): Price of the product.
+            date (datetime.datetime): Insertion date.
+        """
         with self.connect_db() as conn:
             cursor = conn.cursor()
             cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{category}'")
@@ -185,6 +251,9 @@ class SaveToSQL(SQLite):
             cursor.close()
 
     def save(self):
+        """
+        Save the product data in the SQLite database.
+        """
         for product in self.price_searching.products:
             id, name, category, subcategory, subsubcategory, price, date = product
             self.create_rows(int(id), name, category, subcategory, subsubcategory, int(price), date)
@@ -195,6 +264,18 @@ class CalculatePorcentageSQL(SQLite):
         super().__init__(database_path)
 
     def porcentage(self, old_value, new_value):
+        """
+        Calculate the percentage of variation between two values.
+        
+        Args:
+            old_value (float): old value.
+            new_value (float): New value.
+            
+        Returns:
+            tuple: Tuple with two elements:
+                1. State of the variation (emoji and color).
+                2. Variation percentage.
+        """
         if old_value > new_value:
             porcentage = 100 * ((old_value - new_value) / old_value)
             status = "⬇️🟢-"
@@ -208,6 +289,7 @@ class CalculatePorcentageSQL(SQLite):
         return status, porcentage
 
     def process_price_variation(self, product_price_variation, table):
+        
         prices = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
 
         for product in product_price_variation:
@@ -256,7 +338,7 @@ class CalculatePorcentageSQL(SQLite):
         return messages
             
 class App:
-    def __init__(self, price_searching: PriceSearching, save_to: SaveToSQL, calculator: CalculatePorcentageSQL) -> None:
+    def __init__(self, price_searching, save_to: SaveToSQL, calculator: CalculatePorcentageSQL) -> None:
         self.price_searching = price_searching
         self.save_to = save_to
         self.calculator = calculator
@@ -276,7 +358,7 @@ class App:
     
     def save(self, *args):
         """
-        Parameters:
+        Args:
             *args: aditional space to saves
         """
         self.save_to.save()
@@ -309,8 +391,8 @@ def main():
     CSV_save = SaveToCSVFromSQL(SQL_path)
     calculator = CalculatePorcentageSQL(SQL_path)
     app = App(price_searching, SQL_save, calculator)
-    # asyncio.run(app.async_search_prices())
-    app.save()
+    asyncio.run(app.async_search_prices())
+    app.save(CSV_save)
     app.impression_logic()
 
 if "__main__" == __name__:
