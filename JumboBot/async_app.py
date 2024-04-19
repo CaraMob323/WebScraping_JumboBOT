@@ -394,6 +394,6 @@ def main():
     asyncio.run(app.async_search_prices())
     app.save(CSV_save)
     app.impression_logic()
-
+    
 if "__main__" == __name__:
     main()
