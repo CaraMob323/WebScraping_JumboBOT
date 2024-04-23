@@ -310,7 +310,7 @@ class CalculatePorcentageSQL(SQLite):
             JOIN {table} p1 ON p2.id = p1.id 
             WHERE 
                 p2.date = DATE('now', '-1 day') AND
-                p1.date > DATE('now', '-1 day')
+                p1.date = DATE('now')
             ORDER BY
                     p2.id,
                     p1.date,
@@ -374,13 +374,13 @@ class App:
                 if not category in used_categories:
                     messages = self.calculator.calculate_per_day(category)
                     if not messages == []:
-                        print(category.capitalize())
+                        print("\r\n" + category.capitalize().replace("_", " "))
                     for message in messages:
                         id, subcategory, subsubcategory, status, porcentage, yesterday, today = message
                         if subsubcategory == "":
-                            print(f"{subcategory} {status}{round(porcentage, 2)}% ")
+                            print(f"{subcategory.capitalize().replace("_", " ")} {status}{round(porcentage, 2)}% ")
                         else:
-                            print(f"{subsubcategory} {status}{round(porcentage, 2)}% ")
+                            print(f"{subsubcategory.capitalize().replace("_", " ")} {status}{round(porcentage, 2)}% ")
                     used_categories.append(category)
 
 def main():
@@ -391,9 +391,11 @@ def main():
     CSV_save = SaveToCSVFromSQL(SQL_path)
     calculator = CalculatePorcentageSQL(SQL_path)
     app = App(price_searching, SQL_save, calculator)
-    asyncio.run(app.async_search_prices())
+    # asyncio.run(app.async_search_prices())
     app.save(CSV_save)
     app.impression_logic()
 
 if "__main__" == __name__:
     main()
+
+
