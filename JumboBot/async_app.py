@@ -391,7 +391,7 @@ def main():
     CSV_save = SaveToCSVFromSQL(SQL_path)
     calculator = CalculatePorcentageSQL(SQL_path)
     app = App(price_searching, SQL_save, calculator)
-    # asyncio.run(app.async_search_prices())
+    asyncio.run(app.async_search_prices())
     app.save(CSV_save)
     app.impression_logic()
 
