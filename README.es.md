@@ -6,7 +6,7 @@ JumboBOT es un proyecto de web-scrapping en el sitio web de una famosa cadena de
 
 ## Uso
 - Copia el repositorio
-- Instala los `requerimients.txt`
+- Instala los `requirements.txt`
 ```
 pip install -r requirements.txt
 ```
