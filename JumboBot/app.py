@@ -259,6 +259,9 @@ class SaveToSQL(SQLite):
             self.create_rows(int(id), name, category, subcategory, subsubcategory, int(price), date)
 
 
+
+
+
 class CalculatePorcentageSQL(SQLite):
     def __init__(self, database_path):
         super().__init__(database_path)
@@ -291,6 +294,8 @@ class CalculatePorcentageSQL(SQLite):
     def process_price_variation(self, product_price_variation, table):
         
         prices = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
+        prices[table]["old_price"] = []
+        prices[table]["new_price"] = []
 
         for product in product_price_variation:
 
@@ -299,44 +304,88 @@ class CalculatePorcentageSQL(SQLite):
             prices[table][category][subcategory]["old_price"].append(old_price)
             prices[table][category][subcategory]["new_price"].append(new_price)
 
+            prices[table]["old_price"].append(old_price)
+            prices[table]["new_price"].append(new_price)
+
+
         return prices
 
-    def calculate_per_day(self, table):
-        with self.connect_db() as conn:
-            cursor = conn.cursor()
-            instruction = f"""
-            SELECT p2.category, p2.subcategory, p2.price, p1.price
+    def select_instruction(self, table, period: str, period_number: int):
+        month_offset = ""
+        match period.lower():
+            case "days":
+                date_offset = f"-{period_number} days"
+            case "month":
+                date_offset = "start of month"
+                month_offset = f", '-{period_number} month'"
+            case "year":
+                raise NotImplementedError()
+
+
+        instruction = f"""
+        SELECT p2.category, p2.subcategory, p2.price, p1.price
             FROM {table} p2
             JOIN {table} p1 ON p2.id = p1.id 
             WHERE 
-                p2.date = DATE('now', '-1 day') AND
+                p2.date = DATE('now', '{date_offset}'{month_offset}) AND
                 p1.date = DATE('now')
             ORDER BY
-                    p2.id,
-                    p1.date,
-                    p2.date"""
+                    p2.id"""
+    
+        return instruction
+
+    def calculate_per_tables(self, table, period: str, period_number: int):
+        with self.connect_db() as conn:
+            cursor = conn.cursor()
+            instruction = self.select_instruction(table, period, period_number)
+                
+            category, subcategory = "", ""
+
+            cursor.execute(instruction)
+            products_with_price_variation = cursor.fetchall()
+            prices = self.process_price_variation(products_with_price_variation, table)
+
+            messages = []
+            promedy_old_prices = sum(prices[table]["old_price"]) / len(prices[table]["old_price"])
+            promedy_new_prices = sum(prices[table]["new_price"]) / len(prices[table]["new_price"])
+        
+
+            status, porcentage = self.porcentage(promedy_old_prices, promedy_new_prices)
+            if not status == None:
+                messages.append([category, subcategory, status, porcentage])
+
+        cursor.close()
+        return messages
+    
+    
+    def calculate_per_subcategories(self, table, period: str, period_number: int):
+        with self.connect_db() as conn:
+            cursor = conn.cursor()
+            instruction = self.select_instruction(table, period, period_number)
                 
 
             cursor.execute(instruction)
             products_with_price_variation = cursor.fetchall()
             prices = self.process_price_variation(products_with_price_variation, table)
 
-            today = datetime.datetime.now().date()
-            yesterday = today - datetime.timedelta(days=1)
-
             messages = []
             for category, subcategories, in prices[table].items():
-                for subcategory in subcategories:
-                    promedy_old_prices = sum(prices[table][category][subcategory]["old_price"]) / len(prices[table][category][subcategory]["old_price"])
-                    promedy_new_prices = sum(prices[table][category][subcategory]["new_price"]) / len(prices[table][category][subcategory]["new_price"])
-                    
-                    status, porcentage = self.porcentage(promedy_old_prices, promedy_new_prices)
-                    if not status == None:
-                        messages.append([id, category, subcategory, status, porcentage, yesterday, today])
+                if category != "old_price" and category != "new_price":
+                    for subcategory in subcategories:
+                        promedy_old_prices = sum(prices[table][category][subcategory]["old_price"]) / len(prices[table][category][subcategory]["old_price"])
+                        promedy_new_prices = sum(prices[table][category][subcategory]["new_price"]) / len(prices[table][category][subcategory]["new_price"])
+                        
+                        status, porcentage = self.porcentage(promedy_old_prices, promedy_new_prices)
+                        if not status == None:
+                            messages.append([category, subcategory, status, porcentage])
 
         cursor.close()
         return messages
-            
+
+
+
+
+
 class App:
     def __init__(self, price_searching, save_to: SaveToSQL, calculator: CalculatePorcentageSQL) -> None:
         self.price_searching = price_searching
@@ -372,11 +421,11 @@ class App:
             for categories in products:
                 category = categories.CATEGORY
                 if not category in used_categories:
-                    messages = self.calculator.calculate_per_day(category)
+                    messages = self.calculator.calculate_per_subcategories(category, "days", 1)
                     if not messages == []:
                         print("\r\n" + category.capitalize().replace("_", " "))
                     for message in messages:
-                        id, subcategory, subsubcategory, status, porcentage, yesterday, today = message
+                        subcategory, subsubcategory, status, porcentage = message
                         if subsubcategory == "":
                             print(f"{subcategory.capitalize().replace("_", " ")} {status}{round(porcentage, 2)}% ")
                         else:
