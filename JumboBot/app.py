@@ -427,9 +427,9 @@ class App:
                     for message in messages:
                         subcategory, subsubcategory, status, porcentage = message
                         if subsubcategory == "":
-                            print(f"{subcategory.capitalize().replace("_", " ")}{status}{round(porcentage, 2)}% ")
+                            print(f"{status[:3]}{subcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% ")
                         else:
-                            print(f"{subsubcategory.capitalize().replace("_", " ")}{status}{round(porcentage, 2)}% ")
+                            print(f"{status[:3]}{subsubcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% ")
                     used_categories.append(category)
 
 def main():

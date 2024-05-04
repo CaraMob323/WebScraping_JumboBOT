@@ -10,7 +10,7 @@ JumboBOT is a web-scrapping project on a website of a famous  hypermarket chain 
 ```
 pip install -r requirements.txt
 ```
-- Execute `async_core.py`
+- Execute `app.py`
 
 ## Contribution
 
