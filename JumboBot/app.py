@@ -423,7 +423,8 @@ class App:
                 if not category in used_categories:
                     messages = self.calculator.calculate_per_subcategories(category, "days", 1)
                     if not messages == []:
-                        print("\r\n" + category.capitalize().replace("_", " "))
+                        clean_category = category.capitalize().replace("_", " ")
+                        print("\r\n" + clean_category + select_emoji(clean_category))
                     for message in messages:
                         subcategory, subsubcategory, status, porcentage = message
                         if subsubcategory == "":
