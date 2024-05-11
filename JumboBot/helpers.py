@@ -7,7 +7,7 @@ def select_emoji(category: str):
     categories =  {
         'electro': "🔌",
         'hogar y textil': "🪑",
-        'tempo libre': "🏡",
+        'tiempo libre': "🏡",
         'bebes y niños': "👶",
         'almacen': "🥫",
         'bebidas': "🍷",
