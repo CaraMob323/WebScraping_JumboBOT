@@ -328,7 +328,7 @@ class CalculatePorcentageSQL(SQLite):
             JOIN {table} p1 ON p2.id = p1.id 
             WHERE 
                 p2.date = DATE('now', '{date_offset}'{month_offset}) AND
-                p1.date = DATE('now')
+                p1.date = DATE('now', '-2 day')
             ORDER BY
                     p2.id"""
     
@@ -421,7 +421,7 @@ class App:
             for categories in products:
                 category = categories.CATEGORY
                 if not category in used_categories:
-                    messages = self.calculator.calculate_per_subcategories(category, "days", 1)
+                    messages = self.calculator.calculate_per_subcategories(category, "days", 3)
                     if not messages == []:
                         clean_category = category.capitalize().replace("_", " ")
                         print("\r\n" + clean_category + select_emoji(clean_category))
