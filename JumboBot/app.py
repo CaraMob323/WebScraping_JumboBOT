@@ -421,7 +421,7 @@ class App:
             for categories in products:
                 category = categories.CATEGORY
                 if not category in used_categories:
-                    messages = self.calculator.calculate_per_subcategories(category, "days", 2)
+                    messages = self.calculator.calculate_per_subcategories(category, "days", 1)
                     if not messages == []:
                         clean_category = category.capitalize().replace("_", " ")
                         print("\r\n" + clean_category + select_emoji(clean_category))
@@ -441,8 +441,8 @@ def main():
     CSV_save = SaveToCSVFromSQL(SQL_path)
     calculator = CalculatePorcentageSQL(SQL_path)
     app = App(price_searching, SQL_save, calculator)
-    # asyncio.run(app.async_search_prices())
-    # app.save(CSV_save)
+    asyncio.run(app.async_search_prices())
+    app.save(CSV_save)
     app.impression_logic()
 
 if "__main__" == __name__:
