@@ -1,3 +1,5 @@
+import json
+
 def number_range(number):
     start = (number - 1) * 20 + 1
     end = start + 19
@@ -22,3 +24,7 @@ def select_emoji(category: str):
         }
     
     return categories[category.lower()]
+
+def read_tokens():
+    with open("token_x.json", "r") as file:
+        return json.load(file)

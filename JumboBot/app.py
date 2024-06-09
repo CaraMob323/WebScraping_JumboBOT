@@ -5,6 +5,7 @@ import sqlite3
 import pandas as pd
 import asyncio
 import aiohttp
+import tweepy
 from collections import defaultdict
 from abc import ABC, abstractmethod
 from constant import *
@@ -391,7 +392,8 @@ class App:
         self.price_searching = price_searching
         self.save_to = save_to
         self.calculator = calculator
-        
+    
+    # This function is used to extract the data from the Jumbo website.
     async def async_search_prices(self):
         my_conn = aiohttp.TCPConnector(limit=20)
         async with aiohttp.ClientSession(connector=my_conn) as session:
@@ -414,17 +416,27 @@ class App:
         if not args == None:
             for arg in args:
                 arg.save()
-    
-    def impression_logic(self):
+
+     
+    # I know this function is spagetti code at its finest, but I will fix it later, I promise.
+    def impression_logic(self, send_to_twitter: bool = False):
+        messages_variation = "Variación de precios - Dia 2 a Dia 9 - Junio 2024: \r\n \r\n"
+        messages_extra = ""
+
+        maximum_price_increase_message = "Top 8 de los precios que más han aumentado - Dia 2 a Dia 9 - Junio 2024: \r\n \r\n"
+        maximum_price_decrease_message = "Top 8 de los precios que más han disminuido - Dia 2 a Dia 9 - Junio 2024: \r\n \r\n"
+
+
+
         used_categories = []
         for products in CONS_EVERYTHING:
             for categories in products:
                 category = categories.CATEGORY
                 if not category in used_categories:
-                    messages = self.calculator.calculate_per_subcategories(category, "days", 1)
+                    messages = self.calculator.calculate_per_tables(category, "days", 7)
                     if not messages == []:
                         clean_category = category.capitalize().replace("_", " ")
-                        print("\r\n" + clean_category + select_emoji(clean_category))
+                        print("\r\n" + clean_category + select_emoji(clean_category), end="")
                     for message in messages:
                         subcategory, subsubcategory, status, porcentage = message
                         if subsubcategory == "":
@@ -432,6 +444,68 @@ class App:
                         else:
                             print(f"{status[:3]}{subsubcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% ")
                     used_categories.append(category)
+
+                    if not len(messages_variation) > 240:
+                        messages_variation += f"{status[:3]}{clean_category + select_emoji(clean_category)} {status[3]}{round(porcentage, 2)}% \r\n"
+                    else:
+                        messages_extra += f"{status[:3]}{clean_category + select_emoji(clean_category)} {status[3]}{round(porcentage, 2)}% \r\n"
+
+        used_categories = []
+        all_messages = []
+        for products in CONS_EVERYTHING:
+            for categories in products:
+                category = categories.CATEGORY
+                if not category in used_categories:
+                    messages = self.calculator.calculate_per_subcategories(category, "days", 7)
+                    for message in messages:
+                        all_messages.append(message)
+                    used_categories.append(category)
+
+        sorted_messages_increase = sorted(all_messages, key=lambda x: (x[2] == "⬇️🟢-") and x[3], reverse=True)
+        sorted_messages_decrease = sorted(all_messages, key=lambda x: (x[2] == "⬆️🔴+") and x[3], reverse=True)
+        
+        top_ten_decrease = sorted_messages_decrease[:8]
+        top_ten_increase = sorted_messages_increase[:8]
+        
+        for i in top_ten_decrease:
+            subcategory, subsubcategory, status, porcentage = i
+            if subsubcategory == "" or subsubcategory == "otros":
+               maximum_price_increase_message += f"{status[:3]}{subcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% \r\n"
+            else:
+               maximum_price_increase_message += f"{status[:3]}{subsubcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% \r\n"
+        
+        for i in top_ten_increase:
+            subcategory, subsubcategory, status, porcentage = i
+            if subsubcategory == "" or subsubcategory == "otros":
+               maximum_price_decrease_message += f"{status[:3]}{subcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% \r\n"
+            else:
+               maximum_price_decrease_message += f"{status[:3]}{subsubcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% \r\n"
+
+        print(maximum_price_increase_message)
+        print(maximum_price_decrease_message)
+
+        if send_to_twitter == True:
+            json_tokens = read_tokens()
+            client = tweepy.Client(
+                json_tokens["bearer_token"],
+                json_tokens["API_key"],
+                json_tokens["API_key_secret"],
+                json_tokens["access_token"],
+                json_tokens["access_token_secret"])
+
+            if messages_extra == "":
+                client.create_tweet(text=messages_variation)
+                client.create_tweet(text=maximum_price_increase_message)
+                client.create_tweet(text=maximum_price_decrease_message)
+            else:
+                tweet_response = client.create_tweet(text=messages_variation)
+                client.create_tweet(in_reply_to_tweet_id=tweet_response.data["id"], text=messages_extra)
+                client.create_tweet(text=maximum_price_increase_message)
+                client.create_tweet(text=maximum_price_decrease_message)
+
+
+
+
 
 def main():
     SQL_path = "JumboBot/data/products.db"
@@ -441,9 +515,13 @@ def main():
     CSV_save = SaveToCSVFromSQL(SQL_path)
     calculator = CalculatePorcentageSQL(SQL_path)
     app = App(price_searching, SQL_save, calculator)
-    asyncio.run(app.async_search_prices())
-    app.save(CSV_save)
-    app.impression_logic()
+
+    # I use the loop twice to make sure the data is saved in the database.
+    for _ in range(2):
+        asyncio.run(app.async_search_prices())
+        app.save(CSV_save)
+    
+    app.impression_logic(send_to_twitter=True)
 
 if "__main__" == __name__:
     main()
