@@ -521,7 +521,7 @@ def main():
         asyncio.run(app.async_search_prices())
         app.save(CSV_save)
     
-    app.impression_logic(send_to_twitter=True)
+    app.impression_logic(send_to_twitter=False)
 
 if "__main__" == __name__:
     main()
