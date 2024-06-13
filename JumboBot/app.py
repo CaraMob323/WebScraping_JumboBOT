@@ -420,11 +420,17 @@ class App:
      
     # I know this function is spagetti code at its finest, but I will fix it later, I promise.
     def impression_logic(self, send_to_twitter: bool = False):
-        messages_variation = "Variación de precios - Dia 2 a Dia 9 - Junio 2024: \r\n \r\n"
+        day1, day2 = datetime.datetime.now().day - 1, datetime.datetime.now().day
+
+
+
+        messages_variation = f"Variación de precios - {day1} a {day2} - Junio 2024: \r\n \r\n"
         messages_extra = ""
 
-        maximum_price_increase_message = "Top 8 de los precios que más han aumentado - Dia 2 a Dia 9 - Junio 2024: \r\n \r\n"
-        maximum_price_decrease_message = "Top 8 de los precios que más han disminuido - Dia 2 a Dia 9 - Junio 2024: \r\n \r\n"
+
+        top_number = 5 
+        maximum_price_increase_message = f"Top {top_number} de los precios que más han aumentado - {day1} a {day2} - Junio 2024: \r\n \r\n"
+        maximum_price_decrease_message = f"Top {top_number} de los precios que más han disminuido - {day1} a {day2} - Junio 2024: \r\n \r\n"
 
 
 
@@ -433,22 +439,22 @@ class App:
             for categories in products:
                 category = categories.CATEGORY
                 if not category in used_categories:
-                    messages = self.calculator.calculate_per_tables(category, "days", 7)
+                    messages = self.calculator.calculate_per_tables(category, "days", 1)
                     if not messages == []:
                         clean_category = category.capitalize().replace("_", " ")
-                        print("\r\n" + clean_category + select_emoji(clean_category), end="")
+                    else:
+                        continue
                     for message in messages:
                         subcategory, subsubcategory, status, porcentage = message
-                        if subsubcategory == "":
-                            print(f"{status[:3]}{subcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% ")
-                        else:
-                            print(f"{status[:3]}{subsubcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% ")
                     used_categories.append(category)
-
                     if not len(messages_variation) > 240:
                         messages_variation += f"{status[:3]}{clean_category + select_emoji(clean_category)} {status[3]}{round(porcentage, 2)}% \r\n"
                     else:
                         messages_extra += f"{status[:3]}{clean_category + select_emoji(clean_category)} {status[3]}{round(porcentage, 2)}% \r\n"
+
+        print(messages_variation)
+
+
 
         used_categories = []
         all_messages = []
@@ -456,7 +462,7 @@ class App:
             for categories in products:
                 category = categories.CATEGORY
                 if not category in used_categories:
-                    messages = self.calculator.calculate_per_subcategories(category, "days", 7)
+                    messages = self.calculator.calculate_per_subcategories(category, "days", 1)
                     for message in messages:
                         all_messages.append(message)
                     used_categories.append(category)
@@ -464,17 +470,24 @@ class App:
         sorted_messages_increase = sorted(all_messages, key=lambda x: (x[2] == "⬇️🟢-") and x[3], reverse=True)
         sorted_messages_decrease = sorted(all_messages, key=lambda x: (x[2] == "⬆️🔴+") and x[3], reverse=True)
         
-        top_ten_decrease = sorted_messages_decrease[:8]
-        top_ten_increase = sorted_messages_increase[:8]
-        
-        for i in top_ten_decrease:
+        if len(sorted_messages_decrease) > 0:
+            top_decrease = sorted_messages_decrease[:top_number]
+        else:
+            maximum_price_increase_message = "No hay variación de precios en los últimos días."
+        if len(sorted_messages_increase) > 0:
+            top_increase = sorted_messages_increase[:top_number]
+        else:
+            maximum_price_decrease_message = "No hay variación de precios en los últimos días."
+
+
+        for i in top_decrease:
             subcategory, subsubcategory, status, porcentage = i
             if subsubcategory == "" or subsubcategory == "otros":
                maximum_price_increase_message += f"{status[:3]}{subcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% \r\n"
             else:
                maximum_price_increase_message += f"{status[:3]}{subsubcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% \r\n"
         
-        for i in top_ten_increase:
+        for i in top_increase:
             subcategory, subsubcategory, status, porcentage = i
             if subsubcategory == "" or subsubcategory == "otros":
                maximum_price_decrease_message += f"{status[:3]}{subcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% \r\n"
@@ -483,6 +496,12 @@ class App:
 
         print(maximum_price_increase_message)
         print(maximum_price_decrease_message)
+
+        response = input("Quieres enviar estos twits? (S/N): ")
+        if response == "S":
+            send_to_twitter = True
+        else:
+            send_to_twitter = False
 
         if send_to_twitter == True:
             json_tokens = read_tokens()
@@ -521,7 +540,7 @@ def main():
         asyncio.run(app.async_search_prices())
         app.save(CSV_save)
     
-    app.impression_logic(send_to_twitter=False)
+    app.impression_logic(send_to_twitter=True)
 
 if "__main__" == __name__:
     main()
