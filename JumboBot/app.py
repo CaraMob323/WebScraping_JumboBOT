@@ -470,14 +470,10 @@ class App:
         sorted_messages_increase = sorted(all_messages, key=lambda x: (x[2] == "⬇️🟢-") and x[3], reverse=True)
         sorted_messages_decrease = sorted(all_messages, key=lambda x: (x[2] == "⬆️🔴+") and x[3], reverse=True)
         
-        if len(sorted_messages_decrease) > 0:
-            top_decrease = sorted_messages_decrease[:top_number]
-        else:
-            maximum_price_increase_message = "No hay variación de precios en los últimos días."
-        if len(sorted_messages_increase) > 0:
-            top_increase = sorted_messages_increase[:top_number]
-        else:
-            maximum_price_decrease_message = "No hay variación de precios en los últimos días."
+
+        top_decrease = sorted_messages_decrease[:top_number]
+        top_increase = sorted_messages_increase[:top_number]
+
 
 
         for i in top_decrease:
@@ -536,9 +532,9 @@ def main():
     app = App(price_searching, SQL_save, calculator)
 
     # I use the loop twice to make sure the data is saved in the database.
-    for _ in range(2):
-        asyncio.run(app.async_search_prices())
-        app.save(CSV_save)
+    # for _ in range(2):
+    #     asyncio.run(app.async_search_prices())
+    #     app.save(CSV_save)
     
     app.impression_logic(send_to_twitter=True)
 
