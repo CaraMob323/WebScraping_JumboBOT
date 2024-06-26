@@ -339,12 +339,11 @@ class CalculatePorcentageSQL(SQLite):
         with self.connect_db() as conn:
             cursor = conn.cursor()
             instruction = self.select_instruction(table, period, period_number)
-                
-            category, subcategory = "", ""
-
             cursor.execute(instruction)
             products_with_price_variation = cursor.fetchall()
             prices = self.process_price_variation(products_with_price_variation, table)
+
+            category, subcategory = "", ""
 
             messages = []
             promedy_old_prices = sum(prices[table]["old_price"]) / len(prices[table]["old_price"])
@@ -363,8 +362,6 @@ class CalculatePorcentageSQL(SQLite):
         with self.connect_db() as conn:
             cursor = conn.cursor()
             instruction = self.select_instruction(table, period, period_number)
-                
-
             cursor.execute(instruction)
             products_with_price_variation = cursor.fetchall()
             prices = self.process_price_variation(products_with_price_variation, table)
@@ -428,7 +425,7 @@ class App:
         messages_extra = ""
 
 
-        top_number = 5 
+        top_number = 5
         maximum_price_increase_message = f"Top {top_number} de los precios que más han aumentado - {day1} a {day2} - Junio 2024: \r\n \r\n"
         maximum_price_decrease_message = f"Top {top_number} de los precios que más han disminuido - {day1} a {day2} - Junio 2024: \r\n \r\n"
 
@@ -448,7 +445,7 @@ class App:
                         subcategory, subsubcategory, status, porcentage = message
                     used_categories.append(category)
                     if not len(messages_variation) > 240:
-                        messages_variation += f"{status[:3]}{clean_category + select_emoji(clean_category)} {status[3]}{round(porcentage, 2)}% \r\n"
+                        messages_variation += f"{status[:3]}{clean_category + select_emoji(clean_category)} {status[3]}{round(porcentage, 3) if round(porcentage, 2) == 0.00 else round(porcentage, 2)}% \r\n"
                     else:
                         messages_extra += f"{status[:3]}{clean_category + select_emoji(clean_category)} {status[3]}{round(porcentage, 2)}% \r\n"
 
@@ -532,9 +529,9 @@ def main():
     app = App(price_searching, SQL_save, calculator)
 
     # I use the loop twice to make sure the data is saved in the database.
-    # for _ in range(2):
-    #     asyncio.run(app.async_search_prices())
-    #     app.save(CSV_save)
+    for _ in range(2):
+        asyncio.run(app.async_search_prices())
+        app.save(CSV_save)
     
     app.impression_logic(send_to_twitter=True)
 
