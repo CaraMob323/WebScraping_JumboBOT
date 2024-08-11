@@ -267,7 +267,7 @@ class CalculatePorcentageSQL(SQLite):
     def __init__(self, database_path):
         super().__init__(database_path)
 
-    def porcentage(self, old_value, new_value):
+    def percentage(self, old_value, new_value):
         """
         Calculate the percentage of variation between two values.
         
@@ -280,17 +280,22 @@ class CalculatePorcentageSQL(SQLite):
                 1. State of the variation (emoji and color).
                 2. Variation percentage.
         """
+        direction = None
+        percentage = 0
+        
         if old_value > new_value:
-            porcentage = 100 * ((old_value - new_value) / old_value)
-            status = "⬇️🟢-"
+            percentage = 100 * ((old_value - new_value) / old_value) * -1
+            direction = "⬇️🟢"
         elif old_value < new_value:
-            porcentage = 100 * ((new_value - old_value) / old_value)
-            status = "⬆️🔴+"
+            percentage = 100 * ((new_value - old_value) / old_value)
+            direction = "⬆️🔴"
+        
+        if percentage > 0 and percentage < 0.1:
+            round_percentage = round(percentage, 3)
         else:
-            status = None
-            porcentage = None
-                
-        return status, porcentage
+            round_percentage = round(percentage, 2)
+
+        return direction, round_percentage
 
     def process_price_variation(self, product_price_variation, table):
         
@@ -311,9 +316,9 @@ class CalculatePorcentageSQL(SQLite):
 
         return prices
 
-    def select_instruction(self, table, period: str, period_number: int):
+    def select_instruction(self, table, period_type: str, period_number: int):
         month_offset = ""
-        match period.lower():
+        match period_type.lower():
             case "days":
                 date_offset = f"-{period_number} days"
             case "month":
@@ -328,61 +333,178 @@ class CalculatePorcentageSQL(SQLite):
             FROM {table} p2
             JOIN {table} p1 ON p2.id = p1.id 
             WHERE 
-                p2.date = DATE('now', '{date_offset}'{month_offset}) AND
-                p1.date = DATE('now')
+                p2.date = DATE('now', '{date_offset}'{month_offset}, '-3 hour') AND
+                p1.date = DATE('now', '-1 day', '-3 hour')
             ORDER BY
                     p2.id"""
     
         return instruction
 
-    def calculate_per_tables(self, table, period: str, period_number: int):
+    def calculate_per_tables(self, table: str, period_type: str, period_number: int) -> list:
         with self.connect_db() as conn:
             cursor = conn.cursor()
-            instruction = self.select_instruction(table, period, period_number)
+            instruction = self.select_instruction(table, period_type, period_number)
             cursor.execute(instruction)
             products_with_price_variation = cursor.fetchall()
             prices = self.process_price_variation(products_with_price_variation, table)
 
-            category, subcategory = "", ""
-
-            messages = []
             promedy_old_prices = sum(prices[table]["old_price"]) / len(prices[table]["old_price"])
             promedy_new_prices = sum(prices[table]["new_price"]) / len(prices[table]["new_price"])
-        
+            price_direction, percentage = self.percentage(promedy_old_prices, promedy_new_prices)
+            category = f"{table.capitalize().replace('_', ' ')}"
 
-            status, porcentage = self.porcentage(promedy_old_prices, promedy_new_prices)
-            if not status == None:
-                messages.append([category, subcategory, status, porcentage])
+            display_content = []
+            if percentage != 0: 
+                display_content.append({
+                    "category": category,
+                    "price_direction": price_direction,
+                    "percentage": percentage
+                })
 
         cursor.close()
-        return messages
+        return display_content
     
     
-    def calculate_per_subcategories(self, table, period: str, period_number: int):
+    def calculate_per_subcategories(self, table, period_type: str, period_number: int):
         with self.connect_db() as conn:
             cursor = conn.cursor()
-            instruction = self.select_instruction(table, period, period_number)
+            instruction = self.select_instruction(table, period_type, period_number)
             cursor.execute(instruction)
             products_with_price_variation = cursor.fetchall()
             prices = self.process_price_variation(products_with_price_variation, table)
 
-            messages = []
+            display_content = []
             for category, subcategories, in prices[table].items():
                 if category != "old_price" and category != "new_price":
                     for subcategory in subcategories:
                         promedy_old_prices = sum(prices[table][category][subcategory]["old_price"]) / len(prices[table][category][subcategory]["old_price"])
                         promedy_new_prices = sum(prices[table][category][subcategory]["new_price"]) / len(prices[table][category][subcategory]["new_price"])
                         
-                        status, porcentage = self.porcentage(promedy_old_prices, promedy_new_prices)
-                        if not status == None:
-                            messages.append([category, subcategory, status, porcentage])
+                        price_direction, percentage = self.percentage(promedy_old_prices, promedy_new_prices)
+                        if percentage != 0: 
+                            display_content.append({
+                                "category": category,
+                                "subcategory": subcategory,
+                                "price_direction": price_direction,
+                                "percentage": percentage
+                            })
 
         cursor.close()
+        return display_content
+
+class ImpresionLogic():
+    def __init__(self, calculator: CalculatePorcentageSQL) -> None:
+        self.calculator = calculator
+
+    def create_first_message(self, period_type: str, old_day: int = None, new_day: int = None, week_number: int = None, month: str = None, year: int = None) -> str:
+        if period_type == "day":
+            message = f"Variación de precios - {old_day} a {new_day} - {month} {year}:\r\n\r\n"
+        elif period_type == "week":
+            message = f"Variación de precios - Semana {week_number} - {month} {year}:\r\n\r\n"
+        elif period_type == "month":
+            message = f"Variación de precios - {month} {year}:\r\n\r\n"
+        else:
+            raise ValueError("Tipo de período no válido.")
+        return message
+
+    def create_messages_per_tables(self, period_type: str, number_days: int):
+        """
+        Create messages for the impression logic.
+        
+        Args:
+            period_type (str): Type of period (day, week, month, year).
+            number_days (int): Number of days.
+        """
+        messages = []
+        used_categories = []
+        for category in CONS_CATEGORIES:
+            if not category in used_categories:
+                used_categories.append(category)
+                data_info = self.calculator.calculate_per_tables(category, period_type, number_days)
+                if data_info != []:
+                    messages.append(f"{data_info[0]['category'].capitalize() + select_emoji(category) + data_info[0]['price_direction']}{data_info[0]['percentage']}%")
+        
         return messages
 
+    def create_messages_per_subcategories(self, period_type: str, number_days: int):
+        """
+        Create messages for the impression logic.
+        
+        Args:
+            period_type (str): Type of period (day, week, month, year).
+            number_days (int): Number of days.
+        """
+        messages = []
+        used_categories = []
+        for category in CONS_CATEGORIES:
+            if not category in used_categories:
+                used_categories.append(category)
+                data_info = self.calculator.calculate_per_subcategories(category, period_type, number_days)
+                if data_info != []:
+                    messages.append("\r\n" + category.capitalize() + select_emoji(category) + ":" + "\r")
+                    for data in data_info:
+                        if data["subcategory"] == "":
+                            messages.append(f"{data['category'].capitalize() + data['price_direction']}{data['percentage']}%")
+                        else:
+                            messages.append(f"{data['subcategory'].capitalize() + data['price_direction']}{data['percentage']}%")
+
+        return messages
+    
+    def create_top_messages(self, top_number: int, messages: list, mode: int):
+        """
+        Create top messages.
+        
+        Args:
+            top_number (int): Number of top messages.
+            messages (list): List of messages.
+            mode (str): Mode of the messages (increases[0] or decreases[1]). 
+        """
+        if mode == 0:
+            filtered_messages = filter(lambda x: "⬆️🔴" in x, messages)
+        if mode == 1:
+            filtered_messages = filter(lambda x: "⬇️🟢" in x, messages)
+
+        key = lambda x: extract_number(x[-7:]) # The number "-7" is for optimization, means that in the last 7 characters of the string, there is a number.
+
+        sorted_messages = sorted(filtered_messages, key=key, reverse=True)
+
+        if len(sorted_messages) > top_number:
+            return sorted_messages[:top_number]
+    
+        return sorted_messages[:len(sorted_messages)]
 
 
+    def print_products(self, old_day, new_day):
+        pass        
 
+class TwitterLogic():
+    def __init__(self) -> None:
+        self.client = None
+    
+    def connect_twitter(self):
+        """
+        Connect to Twitter.
+        """
+        json_tokens = read_tokens()
+        self.client = tweepy.Client(
+            json_tokens["bearer_token"],
+            json_tokens["API_key"],
+            json_tokens["API_key_secret"],
+            json_tokens["access_token"],
+            json_tokens["access_token_secret"])
+
+    def send_tweet(self, text: str, in_reply_to_tweet_id: int = None):
+        """
+        Send a tweet.
+        
+        Args:
+            text (str): Text of the tweet.
+            in_reply_to_tweet_id (int): ID of the tweet to reply to.
+        """
+        if in_reply_to_tweet_id == None:
+            response = self.client.create_tweet(text=text)
+        else:
+            response = self.client.create_tweet(in_reply_to_tweet_id=in_reply_to_tweet_id, text=text)
 
 class App:
     def __init__(self, price_searching, save_to: SaveToSQL, calculator: CalculatePorcentageSQL) -> None:
@@ -414,109 +536,9 @@ class App:
             for arg in args:
                 arg.save()
 
-     
-    # I know this function is spagetti code at its finest, but I will fix it later, I promise.
-    def impression_logic(self, send_to_twitter: bool = False):
-        day1, day2 = datetime.datetime.now().day - 1, datetime.datetime.now().day
-
-
-
-        messages_variation = f"Variación de precios - {day1} a {day2} - Junio 2024: \r\n \r\n"
-        messages_extra = ""
-
-
-        top_number = 5
-        maximum_price_increase_message = f"Top {top_number} de los precios que más han aumentado - {day1} a {day2} - Junio 2024: \r\n \r\n"
-        maximum_price_decrease_message = f"Top {top_number} de los precios que más han disminuido - {day1} a {day2} - Junio 2024: \r\n \r\n"
-
-
-
-        used_categories = []
-        for products in CONS_EVERYTHING:
-            for categories in products:
-                category = categories.CATEGORY
-                if not category in used_categories:
-                    messages = self.calculator.calculate_per_tables(category, "days", 1)
-                    if not messages == []:
-                        clean_category = category.capitalize().replace("_", " ")
-                    else:
-                        continue
-                    for message in messages:
-                        subcategory, subsubcategory, status, porcentage = message
-                    used_categories.append(category)
-                    if not len(messages_variation) > 240:
-                        messages_variation += f"{status[:3]}{clean_category + select_emoji(clean_category)} {status[3]}{round(porcentage, 3) if round(porcentage, 2) == 0.00 else round(porcentage, 2)}% \r\n"
-                    else:
-                        messages_extra += f"{status[:3]}{clean_category + select_emoji(clean_category)} {status[3]}{round(porcentage, 2)}% \r\n"
-
-        print(messages_variation)
-
-
-
-        used_categories = []
-        all_messages = []
-        for products in CONS_EVERYTHING:
-            for categories in products:
-                category = categories.CATEGORY
-                if not category in used_categories:
-                    messages = self.calculator.calculate_per_subcategories(category, "days", 1)
-                    for message in messages:
-                        all_messages.append(message)
-                    used_categories.append(category)
-
-        sorted_messages_increase = sorted(all_messages, key=lambda x: (x[2] == "⬇️🟢-") and x[3], reverse=True)
-        sorted_messages_decrease = sorted(all_messages, key=lambda x: (x[2] == "⬆️🔴+") and x[3], reverse=True)
-        
-
-        top_decrease = sorted_messages_decrease[:top_number]
-        top_increase = sorted_messages_increase[:top_number]
-
-
-
-        for i in top_decrease:
-            subcategory, subsubcategory, status, porcentage = i
-            if subsubcategory == "" or subsubcategory == "otros":
-               maximum_price_increase_message += f"{status[:3]}{subcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% \r\n"
-            else:
-               maximum_price_increase_message += f"{status[:3]}{subsubcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% \r\n"
-        
-        for i in top_increase:
-            subcategory, subsubcategory, status, porcentage = i
-            if subsubcategory == "" or subsubcategory == "otros":
-               maximum_price_decrease_message += f"{status[:3]}{subcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% \r\n"
-            else:
-               maximum_price_decrease_message += f"{status[:3]}{subsubcategory.capitalize().replace("_", " ")} {status[3]}{round(porcentage, 2)}% \r\n"
-
-        print(maximum_price_increase_message)
-        print(maximum_price_decrease_message)
-
-        response = input("Quieres enviar estos twits? (S/N): ")
-        if response == "S":
-            send_to_twitter = True
-        else:
-            send_to_twitter = False
-
-        if send_to_twitter == True:
-            json_tokens = read_tokens()
-            client = tweepy.Client(
-                json_tokens["bearer_token"],
-                json_tokens["API_key"],
-                json_tokens["API_key_secret"],
-                json_tokens["access_token"],
-                json_tokens["access_token_secret"])
-
-            if messages_extra == "":
-                client.create_tweet(text=messages_variation)
-                client.create_tweet(text=maximum_price_increase_message)
-                client.create_tweet(text=maximum_price_decrease_message)
-            else:
-                tweet_response = client.create_tweet(text=messages_variation)
-                client.create_tweet(in_reply_to_tweet_id=tweet_response.data["id"], text=messages_extra)
-                client.create_tweet(text=maximum_price_increase_message)
-                client.create_tweet(text=maximum_price_decrease_message)
-
-
-
+    def print_messages(self, messages: list):
+        for message in messages:
+            print(message.replace("_", " "))
 
 
 def main():
@@ -524,16 +546,21 @@ def main():
 
     price_searching = JumboPriceSearching()
     SQL_save = SaveToSQL(price_searching, SQL_path)
-    CSV_save = SaveToCSVFromSQL(SQL_path)
     calculator = CalculatePorcentageSQL(SQL_path)
+    impression_logic = ImpresionLogic(calculator)
     app = App(price_searching, SQL_save, calculator)
 
     # I use the loop twice to make sure the data is saved in the database.
+
     for _ in range(2):
         asyncio.run(app.async_search_prices())
-        app.save(CSV_save)
-    
-    app.impression_logic(send_to_twitter=True)
+        app.save()
+     
+    messages_per_table = impression_logic.create_messages_per_tables("days", 1)
+    messages_per_subcategory = impression_logic.create_messages_per_subcategories("days", 1)
+
+    app.print_messages(messages_per_table)
+    app.print_messages(messages_per_subcategory)
 
 if "__main__" == __name__:
     main()

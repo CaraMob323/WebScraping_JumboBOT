@@ -442,6 +442,13 @@ class Carnes:
     LISTOS_PARA_COCINAR: list[Product] = [
         Product("carnes", "listos_para_cocinar", "")
     ]
+    PESCADOS: list[Product] = [
+            Product("carnes", "pescado", "")
+    ]
+    MARISCOS: list[Product] = [
+            Product("carnes", "mariscos", "")
+    ]
+
 
     EVERYTHING = [
         CARNE_VACUNA,
@@ -451,22 +458,10 @@ class Carnes:
         CARNE_DE_CERDO,
         CORDERO_LECHON_CHIVITO_CONEJO,
         CARBON_Y_LEÑA,
-        LISTOS_PARA_COCINAR
-    ]
-
-class PescadosYMariscos:
-    PESCADOS: list[Product] = [
-        Product("carnes", "pescado", "")
-    ]
-    MARISCOS: list[Product] = [
-        Product("carnes", "mariscos", "")
-    ]
-
-    EVERYTHING = [
+        LISTOS_PARA_COCINAR,
         PESCADOS,
         MARISCOS
     ]
-
 
 class QuesosYFiambres:
     QUESOS: list[Product] = [
@@ -676,7 +671,95 @@ class perfumeria:
         MAQUILLAJE
     ]
     
-
+class Limpieza:
+    ACCESORIOS_DE_LIMPIEZA: list[Product] = [
+        Product("limpieza", "accesorios_de_limpieza", "bales_y_mopas"),
+        Product("limpieza", "accesorios_de_limpieza", "bolsas"),
+        Product("limpieza", "accesorios_de_limpieza", "broches_y_ganchos"),
+        Product("limpieza", "accesorios_de_limpieza", "escobas_y_escobillones"),
+        Product("limpieza", "accesorios_de_limpieza", "escobillas"),
+        Product("limpieza", "accesorios_de_limpieza", "esponjas_y_guantes"),
+        Product("limpieza", "accesorios_de_limpieza", "palas_y_cabos"),
+        Product("limpieza", "accesorios_de_limpieza", "paños_multiusos"),
+        Product("limpieza", "accesorios_de_limpieza", "secadores_y_cepillos"),
+        Product("limpieza", "accesorios_de_limpieza", "trapos_de_piso"),
+    ]
+    
+    CALZADO: list[Product] = [
+        Product("limpieza", "calzado", "brillos_y_revividores"),
+        Product("limpieza", "calzado", "limpiadores"),
+        Product("limpieza", "calzado", "pomadas_para_calzado"),
+    ]
+    
+    DESODORANTES_DE_AMBIENTE: list[Product] = [
+        Product("limpieza", "desodorantes_de_ambiente", "absorbe_humedad"),
+        Product("limpieza", "desodorantes_de_ambiente", "aromatizantes"),
+        Product("limpieza", "desodorantes_de_ambiente", "desodorantes_y_desinfectantes"),
+    ]
+    
+    INSECTICIDAS: list[Product] = [
+        Product("limpieza", "insecticidas", "aerosoles"),
+        Product("limpieza", "insecticidas", "aparatos"),
+        Product("limpieza", "insecticidas", "cebos_bolillas_y_pastillas"),
+        Product("limpieza", "insecticidas", "escobas_y_escobillones"),
+        Product("limpieza", "insecticidas", "repelentes"),
+        Product("limpieza", "insecticidas", "tabletas_y_difusores"),
+    ]
+    
+    LAVANDINA: list[Product] = [
+        Product("limpieza", "lavandina", ""),
+    ]
+    
+    LIMPIEZA_DE_BAÑO: list[Product] = [
+        Product("limpieza", "limpieza_de_baño", "desinfectantes"),
+        Product("limpieza", "limpieza_de_baño", "destapa_cañerías"),
+        Product("limpieza", "limpieza_de_baño", "pastillas_y_bloques"),
+    ]
+    
+    CUIDADO_PARA_LA_ROPA: list[Product] = [
+        Product("limpieza", "cuidado_para_la_ropa", "aprestos_y_blanqueadores"),
+        Product("limpieza", "cuidado_para_la_ropa", "cepillo_para_ropa"),
+        Product("limpieza", "cuidado_para_la_ropa", "jabón_en_pan"),
+        Product("limpieza", "cuidado_para_la_ropa", "detergente_para_ropa"),
+        Product("limpieza", "cuidado_para_la_ropa", "quitamanchas"),
+        Product("limpieza", "cuidado_para_la_ropa", "suavizantes"),
+        Product("limpieza", "cuidado_para_la_ropa", "perfumantes"),
+    ]
+    
+    LIMPIEZA_DE_COCINA: list[Product] = [
+        Product("limpieza", "limpieza_de_cocina", "detergentes"),
+        Product("limpieza", "limpieza_de_cocina", "escarrabadientes"),
+        Product("limpieza", "limpieza_de_cocina", "fosforos"),
+        Product("limpieza", "limpieza_de_cocina", "limpiadores"),
+        Product("limpieza", "limpieza_de_cocina", "limpiavidrios"),
+        Product("limpieza", "limpieza_de_cocina", "productos_para_lavavajillas"),
+    ]
+    
+    LIMPIEZA_DE_PISOS_Y_MUEBLES: list[Product] = [
+        Product("limpieza", "limpieza_de_pisos_y_muebles", "ceras_y_autobrillos"),
+        Product("limpieza", "limpieza_de_pisos_y_muebles", "limpiadores_de_pisos"),
+        Product("limpieza", "limpieza_de_pisos_y_muebles", "lustramuebles"),
+    ]
+    
+    PAPELES: list[Product] = [
+        Product("limpieza", "papeles", "pañuelos"),
+        Product("limpieza", "papeles", "papel_higiénico"),
+        Product("limpieza", "papeles", "rollos_de_cocina"),
+        Product("limpieza", "papeles", "servilletas"),
+    ]
+    
+    EVERYTHNG = [
+        ACCESORIOS_DE_LIMPIEZA,
+        CALZADO,
+        DESODORANTES_DE_AMBIENTE,
+        INSECTICIDAS,
+        LAVANDINA,
+        LIMPIEZA_DE_BAÑO,
+        CUIDADO_PARA_LA_ROPA,
+        LIMPIEZA_DE_COCINA,
+        LIMPIEZA_DE_PISOS_Y_MUEBLES,
+        PAPELES
+    ]
 
 CONS_ELECTRO = Electro()
 CONS_HOGAR = Hogar()
@@ -686,14 +769,15 @@ CONS_ALMACEN = Almacen()
 CONS_BEBIDAS = Bebidas()
 CONS_FRUTAS_VERDURAS = FrutasYVerduras()
 CONS_CARNES = Carnes()
-CONS_PESCADOS_MARISCOS = PescadosYMariscos()
 CONS_QUESOS_FIAMBRES = QuesosYFiambres()
 CONS_LACTEOS = Lacteos()
 CONS_CONGELADOS = Congelados()
 CONS_PANADERIA_REPOSTERIA = PanaderiaYReposteria()
 CONS_COMIDAS_PREPARADAS = ComidasPreparadas()
 CONS_perfumeria = perfumeria()
+CONS_LIMPIEZA = Limpieza()
 
-CONS_EVERYTHING = CONS_ELECTRO.EVERYTHING + CONS_HOGAR.EVERYTHING + CONS_TIEMPO_LIBRE.EVERYTHING + CONS_BEBES_NINOS.EVERYTHING + CONS_ALMACEN.EVERYTHING + CONS_BEBIDAS.EVERYTHING + CONS_FRUTAS_VERDURAS.EVERYTHING + CONS_CARNES.EVERYTHING + CONS_PESCADOS_MARISCOS.EVERYTHING + CONS_QUESOS_FIAMBRES.EVERYTHING + CONS_LACTEOS.EVERYTHING + CONS_CONGELADOS.EVERYTHING + CONS_PANADERIA_REPOSTERIA.EVERYTHING + CONS_COMIDAS_PREPARADAS.EVERYTHING + CONS_perfumeria.EVERYTHING
+CONS_CATEGORIES = ["electro", "hogar_y_textil", "tiempo_libre", "bebes_y_niños", "almacen", "bebidas", "frutas_y_verduras", "carnes", "quesos_y_fiambres", "lacteos", "congelados", "panadería_y_repostería", "comidas_preparadas", "perfumeria", "limpieza"]
+CONS_EVERYTHING = CONS_ELECTRO.EVERYTHING + CONS_HOGAR.EVERYTHING + CONS_TIEMPO_LIBRE.EVERYTHING + CONS_BEBES_NINOS.EVERYTHING + CONS_ALMACEN.EVERYTHING + CONS_BEBIDAS.EVERYTHING + CONS_FRUTAS_VERDURAS.EVERYTHING + CONS_CARNES.EVERYTHING + CONS_QUESOS_FIAMBRES.EVERYTHING + CONS_LACTEOS.EVERYTHING + CONS_CONGELADOS.EVERYTHING + CONS_PANADERIA_REPOSTERIA.EVERYTHING + CONS_COMIDAS_PREPARADAS.EVERYTHING + CONS_perfumeria.EVERYTHING + CONS_LIMPIEZA.EVERYTHNG
 
 
