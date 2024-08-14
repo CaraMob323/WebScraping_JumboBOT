@@ -1,4 +1,3 @@
 backup
-a.txt
-test.py
+__pycache__
 token_x.json
