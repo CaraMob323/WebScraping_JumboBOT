@@ -8,8 +8,13 @@ import aiohttp
 import tweepy
 from collections import defaultdict
 from abc import ABC, abstractmethod
-from constant import *
-from helpers import *
+
+if "__main__" != __name__:
+    from JumboBot.constant import *
+    from JumboBot.helpers import *
+else:
+    from constant import *
+    from helpers import *
 
 
 # Adapters for sqlite
@@ -131,7 +136,8 @@ class JumboURLCreator(URLCreator):
             str: URL of the web request.
         """
         key = self.json_generator.generate_key(categories, page)
-        url= f"https://www.jumbo.com.ar/_v/segment/graphql/v1?workspace=master&maxAge=short&appsEtag=remove&domain=store&locale=es-AR&__bindingId=4780db52-b885-45f0-bbcc-8bf212bb8427&operationName=productSearchV3&variables=%7B%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%228e3fd5f65d7d83516bfea23051b11e7aa469d85f26906f27e18afbee52c56ce4%22%2C%22sender%22%3A%22vtex.store-resources%400.x%22%2C%22provider%22%3A%22vtex.search-graphql%400.x%22%7D%2C%22variables%22%3A%22{key}%3D%22%7D"
+        sha256hash = f"%22%3A%22c9ba53c47cbd7904ee373791cf16738106db3a39cde16beb2b53d3adb71d37d0%22%2C%22"
+        url= f"https://www.jumbo.com.ar/_v/segment/graphql/v1?workspace=master&maxAge=short&appsEtag=remove&domain=store&locale=es-AR&__bindingId=4780db52-b885-45f0-bbcc-8bf212bb8427&operationName=productSearchV3&variables=%7B%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash{sha256hash}sender%22%3A%22vtex.store-resources%400.x%22%2C%22provider%22%3A%22vtex.search-graphql%400.x%22%7D%2C%22variables%22%3A%22{key}%3D%22%7D"
         return url
 
 class JumboPriceSearching():

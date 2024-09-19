@@ -86,6 +86,9 @@ class Hogar:
     FERRETERIA: list[Product] = [
         Product("hogar_y_textil", "ferreteria", ""),
     ]
+    INDUMENTARIA: list[Product] = [
+        Product("hogar_y_textil", "indumentaria", ""),
+    ]
     MESA: list[Product] = [
         Product("hogar_y_textil", "mesa", ""),
     ]
@@ -105,6 +108,7 @@ class Hogar:
         COLCHONES_Y_ALMOHADAS,
         DECORACION,
         COTILLON,
+        INDUMENTARIA,
         FERRETERIA,
         MESA,
         MUEBLES,
@@ -442,12 +446,6 @@ class Carnes:
     LISTOS_PARA_COCINAR: list[Product] = [
         Product("carnes", "listos_para_cocinar", "")
     ]
-    PESCADOS: list[Product] = [
-            Product("carnes", "pescado", "")
-    ]
-    MARISCOS: list[Product] = [
-            Product("carnes", "mariscos", "")
-    ]
 
 
     EVERYTHING = [
@@ -458,7 +456,18 @@ class Carnes:
         CARNE_DE_CERDO,
         CORDERO_LECHON_CHIVITO_CONEJO,
         CARBON_Y_LEÑA,
-        LISTOS_PARA_COCINAR,
+        LISTOS_PARA_COCINAR
+    ]
+
+class PescadosMariscos:
+    PESCADOS: list[Product] = [
+            Product("pescados_y_mariscos", "pescados", "")
+    ]
+    MARISCOS: list[Product] = [
+            Product("pescados_y_mariscos", "mariscos", "")
+    ]
+
+    EVERYTHING = [
         PESCADOS,
         MARISCOS
     ]
@@ -769,6 +778,7 @@ CONS_ALMACEN = Almacen()
 CONS_BEBIDAS = Bebidas()
 CONS_FRUTAS_VERDURAS = FrutasYVerduras()
 CONS_CARNES = Carnes()
+CONS_PESCADOS_MARISCOS = PescadosMariscos()
 CONS_QUESOS_FIAMBRES = QuesosYFiambres()
 CONS_LACTEOS = Lacteos()
 CONS_CONGELADOS = Congelados()
@@ -777,7 +787,7 @@ CONS_COMIDAS_PREPARADAS = ComidasPreparadas()
 CONS_perfumeria = perfumeria()
 CONS_LIMPIEZA = Limpieza()
 
-CONS_CATEGORIES = ["electro", "hogar_y_textil", "tiempo_libre", "bebes_y_niños", "almacen", "bebidas", "frutas_y_verduras", "carnes", "quesos_y_fiambres", "lacteos", "congelados", "panadería_y_repostería", "comidas_preparadas", "perfumeria", "limpieza"]
-CONS_EVERYTHING = CONS_ELECTRO.EVERYTHING + CONS_HOGAR.EVERYTHING + CONS_TIEMPO_LIBRE.EVERYTHING + CONS_BEBES_NINOS.EVERYTHING + CONS_ALMACEN.EVERYTHING + CONS_BEBIDAS.EVERYTHING + CONS_FRUTAS_VERDURAS.EVERYTHING + CONS_CARNES.EVERYTHING + CONS_QUESOS_FIAMBRES.EVERYTHING + CONS_LACTEOS.EVERYTHING + CONS_CONGELADOS.EVERYTHING + CONS_PANADERIA_REPOSTERIA.EVERYTHING + CONS_COMIDAS_PREPARADAS.EVERYTHING + CONS_perfumeria.EVERYTHING + CONS_LIMPIEZA.EVERYTHNG
+CONS_CATEGORIES = ["electro", "hogar_y_textil", "tiempo_libre", "bebes_y_niños", "almacen", "bebidas", "frutas_y_verduras", "carnes", "pescados_y_mariscos", "quesos_y_fiambres", "lacteos", "congelados", "panadería_y_repostería", "comidas_preparadas", "perfumeria", "limpieza"]
+CONS_EVERYTHING = CONS_ELECTRO.EVERYTHING + CONS_HOGAR.EVERYTHING + CONS_TIEMPO_LIBRE.EVERYTHING + CONS_BEBES_NINOS.EVERYTHING + CONS_ALMACEN.EVERYTHING + CONS_BEBIDAS.EVERYTHING + CONS_FRUTAS_VERDURAS.EVERYTHING + CONS_CARNES.EVERYTHING + CONS_PESCADOS_MARISCOS.EVERYTHING + CONS_QUESOS_FIAMBRES.EVERYTHING + CONS_LACTEOS.EVERYTHING + CONS_CONGELADOS.EVERYTHING + CONS_PANADERIA_REPOSTERIA.EVERYTHING + CONS_COMIDAS_PREPARADAS.EVERYTHING + CONS_perfumeria.EVERYTHING + CONS_LIMPIEZA.EVERYTHNG
 
 
